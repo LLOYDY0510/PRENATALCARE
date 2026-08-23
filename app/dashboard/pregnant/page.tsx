@@ -8,9 +8,9 @@ export default async function PregnantRecordsPage() {
   const { data: records, error } = await supabase
     .from('pregnant_mothers')
     .select(
-      'id, date_registered, first_name, middle_name, last_name, address, age, lmp, gravida_para, edd, blood_pressure, height_cm, weight_kg'
+      'id, serial_no, date_registered, first_name, middle_name, last_name, address, age, lmp, gravida_para, edd, blood_pressure, height_cm, weight_kg'
     )
-    .order('created_at', { ascending: false });
+    .order('serial_no', { ascending: true });
 
   return (
     <div>
@@ -40,6 +40,7 @@ export default async function PregnantRecordsPage() {
         <table className="w-full text-sm whitespace-nowrap">
           <thead className="bg-gray-50 border-b text-left text-gray-500">
             <tr>
+              <th className="px-4 py-3">Serial No.</th>
               <th className="px-4 py-3">Date Registered</th>
               <th className="px-4 py-3">Name</th>
               <th className="px-4 py-3">Address</th>
@@ -56,13 +57,14 @@ export default async function PregnantRecordsPage() {
           <tbody>
             {(!records || records.length === 0) && (
               <tr>
-                <td colSpan={11} className="px-4 py-8 text-center text-gray-400">
+                <td colSpan={12} className="px-4 py-8 text-center text-gray-400">
                   No pregnant mothers registered yet.
                 </td>
               </tr>
             )}
             {records?.map((r) => (
               <tr key={r.id} className="border-b last:border-0">
+                <td className="px-4 py-3 text-gray-500 font-mono text-xs">{r.serial_no ?? '—'}</td>
                 <td className="px-4 py-3">{r.date_registered ?? '—'}</td>
                 <td className="px-4 py-3 font-medium">
                   {[r.first_name, r.middle_name, r.last_name].filter(Boolean).join(' ') || '—'}

@@ -6,16 +6,11 @@ export const dynamic = 'force-dynamic';
 export default async function RiskMapPage() {
   const supabase = await createClient();
 
-  const { data: located } = await supabase
+  const { data: records } = await supabase
     .from('pregnant_mothers')
     .select('id, full_name, purok, risk_level, latitude, longitude')
     .not('latitude', 'is', null)
     .not('longitude', 'is', null);
-
-  const { data: unlocated } = await supabase
-    .from('pregnant_mothers')
-    .select('id, full_name')
-    .is('latitude', null);
 
   return (
     <div>
@@ -24,7 +19,7 @@ export default async function RiskMapPage() {
         Overview of pregnant mothers by risk level per purok.
       </p>
 
-      <RiskMapClient records={located ?? []} unlocated={unlocated ?? []} />
+      <RiskMapClient records={records ?? []} />
     </div>
   );
 }
