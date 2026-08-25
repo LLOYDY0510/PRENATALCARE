@@ -8,10 +8,12 @@ export const dynamic = 'force-dynamic';
 const MENUS: Record<string, { label: string; href: string }[]> = {
   bhw_head: [
     { label: 'Dashboard', href: '/dashboard' },
-    { label: 'Manage BHW (Purok)', href: '/dashboard/bhw' },
+    { label: 'Risk Map', href: '/dashboard/risk-map' },
     { label: 'Pregnant Records', href: '/dashboard/pregnant' },
     { label: 'Prenatal Schedule', href: '/dashboard/schedule' },
-    { label: 'Risk Map', href: '/dashboard/risk-map' },
+    { label: 'Prenatal Checkups', href: '/dashboard/checkups' },
+    { label: 'SMS Log', href: '/dashboard/sms-log' },
+    { label: 'Manage BHW (Purok)', href: '/dashboard/bhw' },
     { label: 'Reports', href: '/dashboard/reports' },
   ],
   midwife: [
