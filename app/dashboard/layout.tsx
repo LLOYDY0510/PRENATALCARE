@@ -11,6 +11,8 @@ const MENUS: Record<string, { label: string; href: string }[]> = {
     { label: 'Risk Map', href: '/dashboard/risk-map' },
     { label: 'Pregnant Records', href: '/dashboard/pregnant' },
     { label: 'Prenatal Schedule', href: '/dashboard/schedule' },
+    { label: 'Prenatal Checkups', href: '/dashboard/checkups' },
+    { label: 'SMS Log', href: '/dashboard/sms-log' },
     { label: 'Manage BHW (Purok)', href: '/dashboard/bhw' },
     { label: 'Reports', href: '/dashboard/reports' },
   ],
