@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
+import { logActivity } from '@/utils/logActivity';
 
 type UserRow = {
   id: string;
@@ -37,9 +38,16 @@ export default function ManageUsersTable({ initialUsers }: { initialUsers: UserR
 
   async function updateRole(id: string, role: string) {
     setSavingId(id);
+    const target = users.find((u) => u.id === id);
     const { error } = await supabase.from('profiles').update({ role }).eq('id', id);
     if (!error) {
       setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, role } : u)));
+      await logActivity(
+        'Changed user role',
+        'profile',
+        id,
+        `${target?.email ?? id} → ${role}`
+      );
     }
     setSavingId(null);
   }

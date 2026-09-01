@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { createClient } from '@/utils/supabase/client';
+import { logActivity } from '@/utils/logActivity';
 
 const LocationPicker = dynamic<{
   latitude: number | null;
@@ -129,6 +130,13 @@ export default function RegisterPregnantMotherPage() {
         setLoading(false);
         return;
       }
+
+      await logActivity(
+        'Registered pregnant mother',
+        'pregnant_mother',
+        undefined,
+        `${serial_no} — ${full_name}`
+      );
 
       window.location.href = '/dashboard/pregnant';
     } catch (err) {
