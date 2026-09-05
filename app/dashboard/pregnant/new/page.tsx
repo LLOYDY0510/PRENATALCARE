@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { createClient } from '@/utils/supabase/client';
 import { logActivity } from '@/utils/logActivity';
+import { assessRiskLevel } from '@/utils/assessRisk';
 
 const LocationPicker = dynamic<{
   latitude: number | null;
@@ -44,7 +45,6 @@ export default function RegisterPregnantMotherPage() {
     lat: null,
     lng: null,
   });
-  const [riskLevel, setRiskLevel] = useState<'low' | 'high'>('low');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [agreed, setAgreed] = useState(false);
@@ -121,7 +121,7 @@ export default function RegisterPregnantMotherPage() {
         weight_kg: form.weight_kg ? parseFloat(form.weight_kg) : null,
         latitude: location.lat,
         longitude: location.lng,
-        risk_level: riskLevel,
+        risk_level: computedRisk.level,
         registered_by: user?.id ?? null,
       });
 
@@ -144,6 +144,14 @@ export default function RegisterPregnantMotherPage() {
       setLoading(false);
     }
   }
+
+  const computedRisk = assessRiskLevel({
+    age: form.age ? parseInt(form.age) : null,
+    bloodPressure: form.blood_pressure || null,
+    gravida: form.gravida ? parseInt(form.gravida) : null,
+    heightCm: form.height_cm ? parseFloat(form.height_cm) : null,
+    weightKg: form.weight_kg ? parseFloat(form.weight_kg) : null,
+  });
 
   if (!showForm) {
     return (
@@ -431,15 +439,33 @@ export default function RegisterPregnantMotherPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1">Risk Level</label>
-          <select
-            value={riskLevel}
-            onChange={(e) => setRiskLevel(e.target.value as 'low' | 'high')}
-            className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand"
+          <label className="block text-sm font-medium mb-1">Risk Level (auto-detected)</label>
+          <div
+            className={`rounded-lg border px-4 py-3 ${
+              computedRisk.level === 'high'
+                ? 'bg-red-50 border-red-200'
+                : 'bg-green-50 border-green-200'
+            }`}
           >
-            <option value="low">Low risk</option>
-            <option value="high">High risk</option>
-          </select>
+            <p
+              className={`font-semibold text-sm ${
+                computedRisk.level === 'high' ? 'text-red-700' : 'text-green-700'
+              }`}
+            >
+              {computedRisk.level === 'high' ? '⚠️ High Risk' : '✅ Low Risk'}
+            </p>
+            {computedRisk.reasons.length > 0 ? (
+              <ul className="text-xs text-gray-600 mt-1.5 list-disc list-inside space-y-0.5">
+                {computedRisk.reasons.map((r, i) => (
+                  <li key={i}>{r}</li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-xs text-gray-500 mt-1">
+                No risk factors detected based on entered information.
+              </p>
+            )}
+          </div>
         </div>
 
         <div className="flex gap-3 pt-2">

@@ -14,6 +14,12 @@ type Checkup = {
 
 const TRIMESTERS: ('1st' | '2nd' | '3rd')[] = ['1st', '2nd', '3rd'];
 
+const TRIMESTER_STYLES: Record<string, string> = {
+  '1st': 'bg-blue-100 text-blue-700',
+  '2nd': 'bg-purple-100 text-purple-700',
+  '3rd': 'bg-orange-100 text-orange-700',
+};
+
 export default function PrenatalCheckups({
   motherId,
   initialCheckups,
@@ -23,9 +29,9 @@ export default function PrenatalCheckups({
 }) {
   const supabase = createClient();
   const [checkups, setCheckups] = useState(initialCheckups);
-  const [activeTrimester, setActiveTrimester] = useState<'1st' | '2nd' | '3rd'>('1st');
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
+    trimester: '1st' as '1st' | '2nd' | '3rd',
     checkup_date: '',
     blood_pressure: '',
     weight_kg: '',
@@ -34,12 +40,9 @@ export default function PrenatalCheckups({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
-  const grouped = TRIMESTERS.reduce((acc, tri) => {
-    acc[tri] = checkups
-      .filter((c) => c.trimester === tri)
-      .sort((a, b) => a.checkup_date.localeCompare(b.checkup_date));
-    return acc;
-  }, {} as Record<string, Checkup[]>);
+  const sortedCheckups = [...checkups].sort((a, b) =>
+    b.checkup_date.localeCompare(a.checkup_date)
+  );
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
@@ -60,7 +63,7 @@ export default function PrenatalCheckups({
       .from('prenatal_checkups')
       .insert({
         pregnant_mother_id: motherId,
-        trimester: activeTrimester,
+        trimester: form.trimester,
         checkup_date: form.checkup_date,
         blood_pressure: form.blood_pressure || null,
         weight_kg: form.weight_kg ? parseFloat(form.weight_kg) : null,
@@ -78,7 +81,7 @@ export default function PrenatalCheckups({
     }
 
     setCheckups((prev) => [...prev, data as Checkup]);
-    setForm({ checkup_date: '', blood_pressure: '', weight_kg: '', notes: '' });
+    setForm({ trimester: '1st', checkup_date: '', blood_pressure: '', weight_kg: '', notes: '' });
     setShowForm(false);
   }
 
@@ -92,76 +95,44 @@ export default function PrenatalCheckups({
 
   return (
     <div className="card p-6">
-      <h2 className="text-lg font-semibold mb-4">Prenatal Checkups</h2>
-
-      {/* Trimester tabs */}
-      <div className="flex gap-2 mb-4 border-b">
-        {TRIMESTERS.map((tri) => (
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-semibold">Prenatal Checkups</h2>
+        {!showForm && (
           <button
-            key={tri}
-            onClick={() => {
-              setActiveTrimester(tri);
-              setShowForm(false);
-            }}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition ${
-              activeTrimester === tri
-                ? 'border-brand text-brand'
-                : 'border-transparent text-muted hover:text-gray-700'
-            }`}
+            onClick={() => setShowForm(true)}
+            className="text-sm text-brand-dark hover:underline"
           >
-            {tri} Trimester
-            <span className="ml-1.5 text-xs text-muted-2">
-              ({grouped[tri]?.length ?? 0})
-            </span>
+            + Add checkup
           </button>
-        ))}
-      </div>
-
-      {/* Checkup list for active trimester */}
-      <div className="space-y-2 mb-4">
-        {grouped[activeTrimester].length === 0 && (
-          <p className="text-sm text-muted-2 py-4 text-center">
-            No checkups recorded for the {activeTrimester} trimester yet.
-          </p>
         )}
-        {grouped[activeTrimester].map((c) => (
-          <div
-            key={c.id}
-            className="flex items-start justify-between border rounded-lg px-4 py-3"
-          >
-            <div>
-              <p className="text-sm font-medium">{c.checkup_date}</p>
-              <p className="text-xs text-muted mt-0.5">
-                {c.blood_pressure ? `BP: ${c.blood_pressure}` : ''}
-                {c.weight_kg ? ` · Weight: ${c.weight_kg}kg` : ''}
-              </p>
-              {c.notes && <p className="text-xs text-muted mt-1">{c.notes}</p>}
-            </div>
-            <button
-              onClick={() => handleDelete(c.id)}
-              className="text-red-500 hover:underline text-xs"
-            >
-              Delete
-            </button>
-          </div>
-        ))}
       </div>
 
       {/* Add checkup form */}
-      {!showForm ? (
-        <button
-          onClick={() => setShowForm(true)}
-          className="text-sm text-brand hover:underline"
-        >
-          + Add {activeTrimester} trimester checkup
-        </button>
-      ) : (
-        <form onSubmit={handleAdd} className="border rounded-lg p-4 space-y-3 bg-gray-50">
+      {showForm && (
+        <form onSubmit={handleAdd} className="border rounded-lg p-4 space-y-3 bg-gray-50 mb-4">
           {error && <p className="text-sm text-red-600">{error}</p>}
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium mb-1">Checkup Date</label>
+              <label className="block text-xs font-medium mb-1">Trimester</label>
+              <select
+                value={form.trimester}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, trimester: e.target.value as '1st' | '2nd' | '3rd' }))
+                }
+                className="w-full border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+              >
+                {TRIMESTERS.map((t) => (
+                  <option key={t} value={t}>
+                    {t} Trimester
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium mb-1">
+                Date they went for checkup
+              </label>
               <input
                 type="date"
                 value={form.checkup_date}
@@ -169,16 +140,17 @@ export default function PrenatalCheckups({
                 className="w-full border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
               />
             </div>
-            <div>
-              <label className="block text-xs font-medium mb-1">Blood Pressure</label>
-              <input
-                type="text"
-                value={form.blood_pressure}
-                onChange={(e) => setForm((p) => ({ ...p, blood_pressure: e.target.value }))}
-                placeholder="e.g. 120/80"
-                className="w-full border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
-              />
-            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium mb-1">Blood Pressure</label>
+            <input
+              type="text"
+              value={form.blood_pressure}
+              onChange={(e) => setForm((p) => ({ ...p, blood_pressure: e.target.value }))}
+              placeholder="e.g. 120/80"
+              className="w-full border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+            />
           </div>
 
           <div>
@@ -206,7 +178,7 @@ export default function PrenatalCheckups({
             <button
               type="submit"
               disabled={saving}
-              className="bg-brand text-white px-4 py-1.5 rounded-lg text-sm hover:bg-brand-dark disabled:opacity-50"
+              className="bg-brand text-white px-4 py-1.5 rounded-lg text-sm hover:opacity-90 disabled:opacity-50"
             >
               {saving ? 'Saving...' : 'Save Checkup'}
             </button>
@@ -220,6 +192,45 @@ export default function PrenatalCheckups({
           </div>
         </form>
       )}
+
+      {/* Flat list of all checkups, trimester shown beside each entry */}
+      <div className="space-y-2">
+        {sortedCheckups.length === 0 && (
+          <p className="text-sm text-gray-400 py-4 text-center border rounded-lg">
+            No checkups recorded yet.
+          </p>
+        )}
+        {sortedCheckups.map((c) => (
+          <div
+            key={c.id}
+            className="flex items-start justify-between border rounded-lg px-4 py-3"
+          >
+            <div className="flex items-start gap-3">
+              <span
+                className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
+                  TRIMESTER_STYLES[c.trimester]
+                }`}
+              >
+                {c.trimester} Tri
+              </span>
+              <div>
+                <p className="text-sm font-medium">{c.checkup_date}</p>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  {c.blood_pressure ? `BP: ${c.blood_pressure}` : ''}
+                  {c.weight_kg ? ` · Weight: ${c.weight_kg}kg` : ''}
+                </p>
+                {c.notes && <p className="text-xs text-gray-600 mt-1">{c.notes}</p>}
+              </div>
+            </div>
+            <button
+              onClick={() => handleDelete(c.id)}
+              className="text-red-500 hover:underline text-xs shrink-0"
+            >
+              Delete
+            </button>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

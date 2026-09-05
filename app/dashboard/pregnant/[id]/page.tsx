@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { createClient } from '@/utils/supabase/server';
 import PrenatalCheckups from '@/components/PrenatalCheckups';
+import { getPregnancyMonth, getTrimester, getNutritionTips } from '@/utils/nutritionTips';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,6 +32,10 @@ export default async function ViewPregnantMotherPage({
     .filter(Boolean)
     .join(' ');
 
+  const month = getPregnancyMonth(record.lmp);
+  const trimester = getTrimester(month);
+  const tips = getNutritionTips(month);
+
   return (
     <div className="max-w-2xl space-y-6">
       <div>
@@ -38,6 +43,33 @@ export default async function ViewPregnantMotherPage({
           {record.serial_no ?? 'Record'} — {fullName}
         </h1>
         <p className="text-muted">Pregnant mother record details.</p>
+      </div>
+
+      {/* Nutrition Tips — based on LMP-calculated pregnancy month */}
+      <div className="card p-6">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-lg font-semibold">Nutrition Tips</h2>
+          {month != null && (
+            <span className="text-xs px-2 py-1 rounded-full bg-brand-light text-brand-dark font-medium">
+              Month {month} · {trimester} Trimester
+            </span>
+          )}
+        </div>
+
+        {month == null ? (
+          <p className="text-sm text-muted-2">
+            LMP not set for this record — cannot determine pregnancy month.
+          </p>
+        ) : (
+          <ul className="space-y-2 text-sm text-gray-700">
+            {tips.map((tip, i) => (
+              <li key={i} className="flex gap-2">
+                <span className="text-brand-dark">•</span>
+                <span>{tip}</span>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
       {/* Read-only info summary — hidden for now */}

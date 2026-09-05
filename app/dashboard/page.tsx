@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/utils/supabase/server';
 import BhwHeadDashboard from '@/components/BhwHeadDashboard';
+import MidwifeDashboard from '@/components/MidwifeDashboard';
 
 export const dynamic = 'force-dynamic';
 
@@ -47,12 +48,7 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      {role === 'midwife' && (
-        <div className="card p-6">
-          <h1 className="text-2xl font-semibold mb-2 text-ink">Midwife Dashboard 🩺</h1>
-          <p className="text-muted">Overview of pregnant mothers, checkups, and schedules.</p>
-        </div>
-      )}
+      {role === 'midwife' && <MidwifeDashboard />}
 
       {role === 'bhw_purok' && (
         <div className="card p-6">
