@@ -1,12 +1,16 @@
 'use client';
-
-import { useState } from 'react';
+ 
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { createClient } from '@/utils/supabase/client';
+<<<<<<< HEAD
 import { logActivity } from '@/utils/logActivity';
 import { assessRiskLevel } from '@/utils/assessRisk';
 
+=======
+ 
+>>>>>>> f8ba70f07c1b1e8f6027bc68203762510ca6735f
 const LocationPicker = dynamic<{
   latitude: number | null;
   longitude: number | null;
@@ -19,11 +23,18 @@ const LocationPicker = dynamic<{
     </div>
   ),
 });
-
+ 
+type Indicator = {
+  id: string;
+  label: string;
+  indicator_type: string;
+  threshold_value: number | null;
+};
+ 
 export default function RegisterPregnantMotherPage() {
   const router = useRouter();
   const supabase = createClient();
-
+ 
   const [form, setForm] = useState({
     date_registered: new Date().toISOString().slice(0, 10),
     first_name: '',
@@ -45,15 +56,33 @@ export default function RegisterPregnantMotherPage() {
     lat: null,
     lng: null,
   });
+<<<<<<< HEAD
+=======
+  const [indicators, setIndicators] = useState<Indicator[]>([]);
+  const [selectedIndicatorIds, setSelectedIndicatorIds] = useState<string[]>([]);
+>>>>>>> f8ba70f07c1b1e8f6027bc68203762510ca6735f
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [agreed, setAgreed] = useState(false);
   const [showForm, setShowForm] = useState(false);
-
+ 
+  useEffect(() => {
+    async function loadIndicators() {
+      const { data } = await supabase
+        .from('risk_indicators')
+        .select('id, label, indicator_type, threshold_value')
+        .eq('active', true)
+        .eq('indicator_type', 'checklist')
+        .order('created_at', { ascending: true });
+      setIndicators(data ?? []);
+    }
+    loadIndicators();
+  }, [supabase]);
+ 
   function updateField(field: string, value: string) {
     setForm((prev) => {
       const next = { ...prev, [field]: value };
-
+ 
       // Auto-calculate EDC from LMP using Naegele's Rule (LMP + 280 days)
       if (field === 'lmp' && value) {
         const lmpDate = new Date(value);
@@ -63,27 +92,33 @@ export default function RegisterPregnantMotherPage() {
           next.edd = edcDate.toISOString().slice(0, 10);
         }
       }
-
+ 
       return next;
     });
   }
-
+ 
+  function toggleIndicator(id: string) {
+    setSelectedIndicatorIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  }
+ 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
-
+ 
     if (!form.last_name.trim() || !form.first_name.trim()) {
       setError('First and last name are required.');
       return;
     }
-
+ 
     setLoading(true);
-
+ 
     try {
       const {
         data: { user },
       } = await supabase.auth.getUser();
-
+ 
       // Generate a unique serial number, e.g. SPM-2026-0001
       const currentYear = new Date().getFullYear();
       const { count } = await supabase
@@ -91,16 +126,17 @@ export default function RegisterPregnantMotherPage() {
         .select('id', { count: 'exact', head: true })
         .gte('date_registered', `${currentYear}-01-01`)
         .lte('date_registered', `${currentYear}-12-31`);
-
+ 
       const nextNumber = (count ?? 0) + 1;
       const serial_no = `SPM-${currentYear}-${String(nextNumber).padStart(4, '0')}`;
-
+ 
       const full_name = [form.first_name, form.middle_name, form.last_name]
         .filter(Boolean)
         .join(' ');
-
+ 
       const gravida_para =
         form.gravida && form.para ? `G${form.gravida}P${form.para}` : null;
+<<<<<<< HEAD
 
       const { error: insertError } = await supabase.from('pregnant_mothers').insert({
         serial_no,
@@ -123,13 +159,78 @@ export default function RegisterPregnantMotherPage() {
         longitude: location.lng,
         risk_level: computedRisk.level,
         registered_by: user?.id ?? null,
+=======
+ 
+      // ---- Automatic risk computation ----
+      const ageNum = form.age ? parseInt(form.age) : null;
+      const gravidaNum = form.gravida ? parseInt(form.gravida) : null;
+ 
+      // Fetch active auto-type indicators to evaluate against
+      const { data: autoIndicators } = await supabase
+        .from('risk_indicators')
+        .select('id, indicator_type, threshold_value')
+        .eq('active', true)
+        .in('indicator_type', ['age_below', 'first_pregnancy_age_above']);
+ 
+      const matchedAutoIds: string[] = [];
+      autoIndicators?.forEach((ind) => {
+        if (
+          ind.indicator_type === 'age_below' &&
+          ageNum != null &&
+          ind.threshold_value != null &&
+          ageNum < ind.threshold_value
+        ) {
+          matchedAutoIds.push(ind.id);
+        }
+        if (
+          ind.indicator_type === 'first_pregnancy_age_above' &&
+          ageNum != null &&
+          gravidaNum === 1 &&
+          ind.threshold_value != null &&
+          ageNum >= ind.threshold_value
+        ) {
+          matchedAutoIds.push(ind.id);
+        }
+>>>>>>> f8ba70f07c1b1e8f6027bc68203762510ca6735f
       });
-
+ 
+      const matchedIndicatorIds = [...selectedIndicatorIds, ...matchedAutoIds];
+      const risk_level = matchedIndicatorIds.length > 0 ? 'high' : 'low';
+      // ---- end risk computation ----
+ 
+      const { data: inserted, error: insertError } = await supabase
+        .from('pregnant_mothers')
+        .insert({
+          serial_no,
+          date_registered: form.date_registered,
+          first_name: form.first_name,
+          middle_name: form.middle_name || null,
+          last_name: form.last_name,
+          full_name,
+          address: form.address || null,
+          purok: form.purok || null,
+          age: ageNum,
+          contact_number: form.contact_number || null,
+          lmp: form.lmp || null,
+          gravida_para,
+          edd: form.edd || null,
+          blood_pressure: form.blood_pressure || null,
+          height_cm: form.height_cm ? parseFloat(form.height_cm) : null,
+          weight_kg: form.weight_kg ? parseFloat(form.weight_kg) : null,
+          latitude: location.lat,
+          longitude: location.lng,
+          risk_level,
+          registered_by: user?.id ?? null,
+        })
+        .select()
+        .single();
+ 
       if (insertError) {
         setError(`Save failed: ${insertError.message}`);
         setLoading(false);
         return;
       }
+<<<<<<< HEAD
 
       await logActivity(
         'Registered pregnant mother',
@@ -138,12 +239,26 @@ export default function RegisterPregnantMotherPage() {
         `${serial_no} — ${full_name}`
       );
 
+=======
+ 
+      // Record which indicators were matched for this mother
+      if (matchedIndicatorIds.length > 0 && inserted) {
+        await supabase.from('pregnant_mother_indicators').insert(
+          matchedIndicatorIds.map((indicator_id) => ({
+            pregnant_mother_id: inserted.id,
+            indicator_id,
+          }))
+        );
+      }
+ 
+>>>>>>> f8ba70f07c1b1e8f6027bc68203762510ca6735f
       window.location.href = '/dashboard/pregnant';
     } catch (err) {
       setError(`Unexpected error: ${err instanceof Error ? err.message : String(err)}`);
       setLoading(false);
     }
   }
+<<<<<<< HEAD
 
   const computedRisk = assessRiskLevel({
     age: form.age ? parseInt(form.age) : null,
@@ -153,6 +268,9 @@ export default function RegisterPregnantMotherPage() {
     weightKg: form.weight_kg ? parseFloat(form.weight_kg) : null,
   });
 
+=======
+ 
+>>>>>>> f8ba70f07c1b1e8f6027bc68203762510ca6735f
   if (!showForm) {
     return (
       <div className="max-w-2xl">
@@ -160,7 +278,7 @@ export default function RegisterPregnantMotherPage() {
         <p className="text-muted mb-6">
           Please read and agree before proceeding to the registration form.
         </p>
-
+ 
         <div className="card p-6">
           <div className="prose prose-sm max-w-none text-gray-700 space-y-3 mb-6">
             <p>
@@ -183,7 +301,7 @@ export default function RegisterPregnantMotherPage() {
               barangay health worker or midwife.
             </p>
           </div>
-
+ 
           <label className="flex items-start gap-3 text-sm text-gray-700 cursor-pointer mb-6">
             <input
               type="checkbox"
@@ -197,7 +315,7 @@ export default function RegisterPregnantMotherPage() {
               her personal information as described above.
             </span>
           </label>
-
+ 
           <div className="flex gap-3">
             <button
               type="button"
@@ -219,14 +337,14 @@ export default function RegisterPregnantMotherPage() {
       </div>
     );
   }
-
+ 
   return (
     <div className="max-w-2xl">
       <h1 className="text-2xl font-semibold mb-1">Register Pregnant Mother</h1>
       <p className="text-muted mb-6">
         Fill in the details below to add a new record.
       </p>
-
+ 
       <form
         onSubmit={handleSubmit}
         className="card p-6 space-y-5"
@@ -234,7 +352,7 @@ export default function RegisterPregnantMotherPage() {
         {error && (
           <p className="text-sm text-red-600 bg-red-50 p-2 rounded">{error}</p>
         )}
-
+ 
         <div>
           <label className="block text-sm font-medium mb-1">Date of Registration</label>
           <input
@@ -245,10 +363,10 @@ export default function RegisterPregnantMotherPage() {
             className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand"
           />
         </div>
-
+ 
         {/* Name */}
         <div>
-          <label className="block text-sm font-medium mb-1">Name *</label>
+          <label className="block text-sm font-medium mb-1">Name * (Middle Initial only)</label>
           <div className="grid grid-cols-3 gap-3">
             <input
               type="text"
@@ -262,7 +380,8 @@ export default function RegisterPregnantMotherPage() {
               type="text"
               value={form.middle_name}
               onChange={(e) => updateField('middle_name', e.target.value)}
-              placeholder="Middle name"
+              placeholder="M.I."
+              maxLength={2}
               className="border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand"
             />
             <input
@@ -275,7 +394,7 @@ export default function RegisterPregnantMotherPage() {
             />
           </div>
         </div>
-
+ 
         <div>
           <label className="block text-sm font-medium mb-1">Address</label>
           <input
@@ -285,17 +404,22 @@ export default function RegisterPregnantMotherPage() {
             className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand"
           />
         </div>
-
+ 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium mb-1">Purok</label>
-            <input
-              type="text"
+            <label className="block text-sm font-medium mb-1">Zone</label>
+            <select
               value={form.purok}
               onChange={(e) => updateField('purok', e.target.value)}
-              placeholder="e.g. 1"
               className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand"
-            />
+            >
+              <option value="">Select...</option>
+              {Array.from({ length: 8 }, (_, i) => i + 1).map((z) => (
+                <option key={z} value={z}>
+                  Zone {z}
+                </option>
+              ))}
+            </select>
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Age</label>
@@ -307,7 +431,7 @@ export default function RegisterPregnantMotherPage() {
             />
           </div>
         </div>
-
+ 
         <div>
           <label className="block text-sm font-medium mb-1">Contact Number</label>
           <input
@@ -317,7 +441,7 @@ export default function RegisterPregnantMotherPage() {
             className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand"
           />
         </div>
-
+ 
         {/* Pregnancy details */}
         <div className="grid grid-cols-2 gap-4">
           <div>
@@ -342,7 +466,7 @@ export default function RegisterPregnantMotherPage() {
             <p className="text-xs text-muted-2 mt-1">Auto-computed from LMP</p>
           </div>
         </div>
-
+ 
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium mb-1">Gravida (G)</label>
@@ -375,7 +499,7 @@ export default function RegisterPregnantMotherPage() {
             </select>
           </div>
         </div>
-
+ 
         {/* Vitals */}
         <div className="grid grid-cols-3 gap-4">
           <div>
@@ -428,7 +552,38 @@ export default function RegisterPregnantMotherPage() {
             </select>
           </div>
         </div>
-
+ 
+        {/* High-risk checklist */}
+        <div>
+          <label className="block text-sm font-medium mb-2">
+            High-Risk Indicators (tick all that apply)
+          </label>
+          {indicators.length === 0 ? (
+            <p className="text-xs text-muted-2">No active checklist indicators configured.</p>
+          ) : (
+            <div className="border rounded-lg divide-y">
+              {indicators.map((ind) => (
+                <label
+                  key={ind.id}
+                  className="flex items-start gap-3 px-3 py-2 text-sm cursor-pointer hover:bg-gray-50"
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedIndicatorIds.includes(ind.id)}
+                    onChange={() => toggleIndicator(ind.id)}
+                    className="mt-0.5 rounded border-gray-300"
+                  />
+                  <span>{ind.label}</span>
+                </label>
+              ))}
+            </div>
+          )}
+          <p className="text-xs text-muted-2 mt-1">
+            Risk level (High/Low) is automatically determined by the system based on age,
+            first pregnancy status, and the indicators selected above.
+          </p>
+        </div>
+ 
         <div>
           <label className="block text-sm font-medium mb-1">Location (pin the mother&apos;s home)</label>
           <LocationPicker
@@ -437,6 +592,7 @@ export default function RegisterPregnantMotherPage() {
             onChange={(lat, lng) => setLocation({ lat, lng })}
           />
         </div>
+<<<<<<< HEAD
 
         <div>
           <label className="block text-sm font-medium mb-1">Risk Level (auto-detected)</label>
@@ -468,6 +624,9 @@ export default function RegisterPregnantMotherPage() {
           </div>
         </div>
 
+=======
+ 
+>>>>>>> f8ba70f07c1b1e8f6027bc68203762510ca6735f
         <div className="flex gap-3 pt-2">
           <button
             type="submit"
