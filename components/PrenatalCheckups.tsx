@@ -99,7 +99,7 @@ export default function PrenatalCheckups({
     <div className="card p-6">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold">Prenatal Checkups</h2>
-        {!showForm && (
+        {canEdit && !showForm && (
           <button
             onClick={() => setShowForm(true)}
             className="text-sm text-brand-dark hover:underline"
@@ -107,50 +107,11 @@ export default function PrenatalCheckups({
             + Add checkup
           </button>
         )}
-<<<<<<< HEAD
       </div>
 
       {/* Add checkup form */}
-      {showForm && (
+      {canEdit && showForm && (
         <form onSubmit={handleAdd} className="border rounded-lg p-4 space-y-3 bg-gray-50 mb-4">
-=======
-        {grouped[activeTrimester].map((c) => (
-          <div
-            key={c.id}
-            className="flex items-start justify-between border rounded-lg px-4 py-3"
-          >
-            <div>
-              <p className="text-sm font-medium">{c.checkup_date}</p>
-              <p className="text-xs text-muted mt-0.5">
-                {c.blood_pressure ? `BP: ${c.blood_pressure}` : ''}
-                {c.weight_kg ? ` · Weight: ${c.weight_kg}kg` : ''}
-              </p>
-              {c.notes && <p className="text-xs text-muted mt-1">{c.notes}</p>}
-            </div>
-                      {canEdit && (
-              <button
-                onClick={() => handleDelete(c.id)}
-                className="text-red-500 hover:underline text-xs"
-              >
-                Delete
-              </button>
-            )}
-          </div>
-        ))}
-      </div>
-
-      {/* Add checkup form */}  
-            {/* Add checkup form */}
-      {canEdit && (!showForm ? (
-        <button
-          onClick={() => setShowForm(true)}
-          className="text-sm text-brand hover:underline"
-        >
-          + Add {activeTrimester} trimester checkup
-        </button>
-      ) : (
-        <form onSubmit={handleAdd} className="border rounded-lg p-4 space-y-3 bg-gray-50">
->>>>>>> f8ba70f07c1b1e8f6027bc68203762510ca6735f
           {error && <p className="text-sm text-red-600">{error}</p>}
 
           <div className="grid grid-cols-2 gap-3">
@@ -232,7 +193,6 @@ export default function PrenatalCheckups({
             </button>
           </div>
         </form>
-<<<<<<< HEAD
       )}
 
       {/* Flat list of all checkups, trimester shown beside each entry */}
@@ -264,18 +224,17 @@ export default function PrenatalCheckups({
                 {c.notes && <p className="text-xs text-gray-600 mt-1">{c.notes}</p>}
               </div>
             </div>
-            <button
-              onClick={() => handleDelete(c.id)}
-              className="text-red-500 hover:underline text-xs shrink-0"
-            >
-              Delete
-            </button>
+            {canEdit && (
+              <button
+                onClick={() => handleDelete(c.id)}
+                className="text-red-500 hover:underline text-xs shrink-0"
+              >
+                Delete
+              </button>
+            )}
           </div>
         ))}
       </div>
-=======
-      ))}
->>>>>>> f8ba70f07c1b1e8f6027bc68203762510ca6735f
     </div>
   );
 }
