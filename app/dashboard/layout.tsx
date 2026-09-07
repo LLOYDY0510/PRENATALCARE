@@ -23,10 +23,6 @@ const MENUS: Record<string, { label: string; href: string }[]> = {
     { label: 'Manage Users', href: '/dashboard/users' },
     { label: 'Reports', href: '/dashboard/reports' },
   ],
-    nurse: [
-    { label: 'Dashboard', href: '/dashboard' },
-    { label: 'Pregnant Records', href: '/dashboard/pregnant' },
-  ],
   nurse: [
     { label: 'Dashboard', href: '/dashboard' },
     { label: 'Pregnant Records', href: '/dashboard/pregnant' },
